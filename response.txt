@@ -1,0 +1,19 @@
+[
+{BlockType: KEY_VALUE_SET,Confidence: 97.0,Geometry: {BoundingBox: {Width: 0.11181972,Height: 0.010584218,Left: 0.6193482,Top: 0.13683},Polygon: [{X: 0.6193482,Y: 0.13683}, {X: 0.7311679,Y: 0.13683}, {X: 0.7311679,Y: 0.14741422}, {X: 0.6193482,Y: 0.14741422}]},Id: b93fbfe3-6098-4b51-a8f9-c01a61740127,Relationships: [{Type: VALUE,Ids: [4c9ea1bb-af4e-4ba8-b864-40433f4cb4e7]}, {Type: CHILD,Ids: [49a9e499-a669-4c7c-a5c4-0a230b9c9830, 28bdf923-f7db-46fa-802f-cc4555adfd14]}],EntityTypes: [KEY],Page: 1},
+{BlockType: KEY_VALUE_SET,Confidence: 97.0,Geometry: {BoundingBox: {Width: 0.06383098,Height: 0.010575734,Left: 0.7349552,Top: 0.13668257},Polygon: [{X: 0.7349552,Y: 0.13668257}, {X: 0.79878616,Y: 0.13668257}, {X: 0.79878616,Y: 0.1472583}, {X: 0.7349552,Y: 0.1472583}]},Id: 4c9ea1bb-af4e-4ba8-b864-40433f4cb4e7,Relationships: [{Type: CHILD,Ids: [7259137a-0423-48ac-abe6-a239a74b701a]}],EntityTypes: [VALUE],Page: 1},
+{BlockType: LINE,Confidence: 99.12051,Text: Account number: 481Y50-J,Geometry: {BoundingBox: {Width: 0.17864595,Height: 0.009695638,Left: 0.6189877,Top: 0.13689087},Polygon: [{X: 0.6189877,Y: 0.13689087}, {X: 0.79763365,Y: 0.13689087}, {X: 0.79763365,Y: 0.14658651}, {X: 0.6189877,Y: 0.14658651}]},Id: 89744714-bbaa-4e1a-ac0e-3f5aa0fe867a,Relationships: [{Type: CHILD,Ids: [49a9e499-a669-4c7c-a5c4-0a230b9c9830, 28bdf923-f7db-46fa-802f-cc4555adfd14, 7259137a-0423-48ac-abe6-a239a74b701a]}],Page: 1}
+]
+
+
+{BlockType: LINE,Confidence: 99.12051,Text: Account number: 481Y50-J,Geometry: {BoundingBox: {Width: 0.17864595,Height: 0.009695638,Left: 0.6189877,Top: 0.13689087},Polygon: [{X: 0.6189877,Y: 0.13689087}, {X: 0.79763365,Y: 0.13689087}, {X: 0.79763365,Y: 0.14658651}, {X: 0.6189877,Y: 0.14658651}]},Id: 89744714-bbaa-4e1a-ac0e-3f5aa0fe867a,Relationships: [{Type: CHILD,Ids: [49a9e499-a669-4c7c-a5c4-0a230b9c9830, 28bdf923-f7db-46fa-802f-cc4555adfd14, 7259137a-0423-48ac-abe6-a239a74b701a]}],Page: 1}
+{BlockType: LINE,Confidence: 99.12051,Text: Account number: 481Y50-J,Geometry: {BoundingBox: {Width: 0.17864595,Height: 0.009695638,Left: 0.6189877,Top: 0.13689087},Polygon: [{X: 0.6189877,Y: 0.13689087}, {X: 0.79763365,Y: 0.13689087}, {X: 0.79763365,Y: 0.14658651}, {X: 0.6189877,Y: 0.14658651}]},Id: 89744714-bbaa-4e1a-ac0e-3f5aa0fe867a,Relationships: [{Type: CHILD,Ids: [49a9e499-a669-4c7c-a5c4-0a230b9c9830, 28bdf923-f7db-46fa-802f-cc4555adfd14, 7259137a-0423-48ac-abe6-a239a74b701a]}],Page: 1}
+
+
+{BlockType: LINE,Confidence: 99.12051,Text: Account number: 481Y50-J,Geometry: {BoundingBox: {Width: 0.17864595,Height: 0.009695638,Left: 0.6189877,Top: 0.13689087},Polygon: [{X: 0.6189877,Y: 0.13689087}, {X: 0.79763365,Y: 0.13689087}, {X: 0.79763365,Y: 0.14658651}, {X: 0.6189877,Y: 0.14658651}]},Id: 89744714-bbaa-4e1a-ac0e-3f5aa0fe867a,Relationships: [{Type: CHILD,Ids: [49a9e499-a669-4c7c-a5c4-0a230b9c9830, 28bdf923-f7db-46fa-802f-cc4555adfd14, 7259137a-0423-48ac-abe6-a239a74b701a]}],Page: 1}
+{BlockType: WORD,Confidence: 99.61761,Text: 481Y50-J,Geometry: {BoundingBox: {Width: 0.06377273,Height: 0.009442413,Left: 0.7338609,Top: 0.13697213},Polygon: [{X: 0.7338609,Y: 0.13697213}, {X: 0.79763365,Y: 0.13697213}, {X: 0.79763365,Y: 0.14641453}, {X: 0.7338609,Y: 0.14641453}]},Id: 7259137a-0423-48ac-abe6-a239a74b701a,Page: 1}
+
+
+{BlockType: WORD,Confidence: 99.95278,Text: Account,Geometry: {BoundingBox: {Width: 0.05475728,Height: 0.009695638,Left: 0.6189877,Top: 0.13689087},Polygon: [{X: 0.6189877,Y: 0.13689087}, {X: 0.673745,Y: 0.13689087}, {X: 0.673745,Y: 0.14658651}, {X: 0.6189877,Y: 0.14658651}]},Id: 49a9e499-a669-4c7c-a5c4-0a230b9c9830,Page: 1}
+{BlockType: WORD,Confidence: 97.79113,Text: number:,Geometry: {BoundingBox: {Width: 0.053986516,Height: 0.009464142,Left: 0.6766052,Top: 0.13706493},Polygon: [{X: 0.6766052,Y: 0.13706493}, {X: 0.7305917,Y: 0.13706493}, {X: 0.7305917,Y: 0.14652908}, {X: 0.6766052,Y: 0.14652908}]},Id: 28bdf923-f7db-46fa-802f-cc4555adfd14,Page: 1}
+
+
