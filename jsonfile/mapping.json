@@ -1,0 +1,82 @@
+{
+  "mapping": [
+    {
+      "detection_keys": [
+        {
+          "block_type": "LINE",
+          "Text":"TD Direct Investing"
+        },
+        {
+          "block_type": "LINE",
+          "Text":"TD"
+        },
+        {
+          "block_type": "LINE",
+          "Text":"Do you have a question?"
+        }
+      ],
+      "algorithm": {
+        "form_mapping": {
+          "account_no": "Account number"
+        },
+        "tables": {
+          "holdings_table": {
+            "security": "Description",
+            "quantity": "Quantity or par value ($)",
+            "price": "Price ($)",
+            "book_cost": "Book cost ($)",
+            "market_value": "Market value ($)"
+          },
+          "activity_table": {
+            "date": "Date",
+            "security":"Description",
+            "activity": "Activity",
+            "quantity": "Quantity",
+            "price": "Price ($)",
+            "amount": "Amount ($)"
+          }
+        }
+      }
+    },
+    {
+      "detection_keys": [
+        {
+          "block_type": "LINE",
+          "Text":"Investment Account Statement"
+        },
+        {
+          "block_type": "LINE",
+          "Text":"Scotia iTRADE."
+        },
+        {
+          "block_type": "LINE",
+          "Text":"www.scotiaitrade.com"
+        }
+      ],
+      "algorithm": {
+        "form_mapping": {
+          "account_no": "Account Number",
+          "account_type": "Account Type"
+        },
+        "tables": {
+          "holdings_table": {
+            "security": "Security Description",
+            "quantity": "Quantity",
+            "price": "Market Price",
+            "book_cost": "Adjusted Book Value",
+            "market_value": "Market Value"
+          },
+          "activity_table": {
+            "date": "Date",
+            "security":"Description",
+            "activity": "Activity",
+            "quantity": "Quantity",
+            "price": "Price",
+            "amount": "Credit/Debit(-)"
+          }
+
+        }
+      }
+    }
+  ]
+}

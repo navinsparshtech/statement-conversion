@@ -6,18 +6,15 @@ import java.util.Map;
 import com.amazonaws.services.textract.model.Block;
 
 public class Table {
-	Block tableBlock;
-	List<Block> cellBlocks;
-	List<Block> cellWords;
-	Map<String, Integer> coulumnRowscount;
-	Map<Integer, String> columnDef;
-	List<Map<Integer, String>> columnNamesList;
-	Map<String, String> rowData;
-	List<Map<String, String>> tableData;
+	public Block tableBlock;
+	public List<Block> cellBlocks;
+	public List<Block> cellWords;
+	public List<Map<Integer, String>> columnNamesList;
+	public Map<String, Integer> coulumnRowscount;
+	public List<Map<String, Object>> tableData;
 
 	public Table() {
 		super();
-
 	}
 
 	public Block getTableBlock() {
@@ -52,14 +49,6 @@ public class Table {
 		this.coulumnRowscount = coulumnRowscount;
 	}
 
-	public Map<Integer, String> getColumnDef() {
-		return columnDef;
-	}
-
-	public void setColumnDef(Map<Integer, String> columnDef) {
-		this.columnDef = columnDef;
-	}
-
 	public List<Map<Integer, String>> getColumnNamesList() {
 		return columnNamesList;
 	}
@@ -68,20 +57,19 @@ public class Table {
 		this.columnNamesList = columnNamesList;
 	}
 
-	public Map<String, String> getRowData() {
-		return rowData;
-	}
-
-	public void setRowData(Map<String, String> rowData) {
-		this.rowData = rowData;
-	}
-
-	public List<Map<String, String>> getTableData() {
+	public List<Map<String, Object>> getTableData() {
 		return tableData;
 	}
 
-	public void setTableData(List<Map<String, String>> tableData) {
+	public void setTableData(List<Map<String, Object>> tableData) {
 		this.tableData = tableData;
+	}
+
+	@Override
+	public String toString() {
+		return "Table [tableBlock=" + tableBlock + ", cellBlocks=" + cellBlocks + ", cellWords=" + cellWords
+				+ ", columnNamesList=" + columnNamesList + ", coulumnRowscount=" + coulumnRowscount + ", tableData="
+				+ tableData + "]";
 	}
 
 }

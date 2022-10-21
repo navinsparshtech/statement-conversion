@@ -1,10 +1,8 @@
 package com.asynctextract;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -42,7 +40,11 @@ import com.amazonaws.services.textract.model.StartDocumentAnalysisResult;
 import com.amazonaws.services.textract.model.StartDocumentTextDetectionRequest;
 import com.amazonaws.services.textract.model.StartDocumentTextDetectionResult;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.parser.JSONParser;;
 
 public class App {
 
@@ -63,9 +65,12 @@ public class App {
 		DETECTION, ANALYSIS
 	}
 
+	// Creates an SNS topic and SQS queue. The queue is subscribed to the topic.
+
 	public static void main(String[] args) throws Exception {
 
-		String document = "scotia_statement.pdf";
+//		String document = "scotia_statement.pdf";
+		String document = "sample1.pdf";
 		String bucket = "textract-console-ap-south-1-189c906f-570a-49ba-836a-fed8cb2dd8a";
 		String roleArn = "arn:aws:iam::258544224960:role/TextractRole";
 
@@ -79,8 +84,6 @@ public class App {
 		System.out.println("Done!");
 
 	}
-
-	// Creates an SNS topic and SQS queue. The queue is subscribed to the topic.
 	static void CreateTopicandQueue() {
 		// create a new SNS topic
 		snsTopicName = "AmazonTextractTopic" + Long.toString(System.currentTimeMillis());
@@ -263,7 +266,7 @@ public class App {
 		NotificationChannel channel = new NotificationChannel().withSNSTopicArn(snsTopicArn).withRoleArn(roleArn);
 
 		// ("TABLES", "FORMS")
-		StartDocumentAnalysisRequest req = new StartDocumentAnalysisRequest().withFeatureTypes("TABLES")
+		StartDocumentAnalysisRequest req = new StartDocumentAnalysisRequest().withFeatureTypes("TABLES", "FORMS")
 				.withDocumentLocation(
 						new DocumentLocation().withS3Object(new S3Object().withBucket(bucket).withName(document)))
 				.withJobTag("AnalyzingText").withNotificationChannel(channel);
@@ -273,20 +276,21 @@ public class App {
 	}
 
 	// Gets the results of processing started by StartDocumentAnalysis
-	private static void GetDocumentAnalysisResults() throws Exception {
+	private static void GetDocumentAnalysisResults() throws FileNotFoundException, Exception {
 
 		int maxResults = 1000;
 		String paginationToken = null;
 		GetDocumentAnalysisResult response = null;
 		Boolean finished = false;
+		List<Block> allBlocks = new ArrayList<>();
 		List<Block> keySetBlocks = new ArrayList<Block>();
 		List<Block> valueSetBlocks = new ArrayList<Block>();
 		List<Block> wordSetBlocks = new ArrayList<Block>();
 		List<KeyValue> allKeyValues = new ArrayList<KeyValue>();
-
 		List<Block> tableBlocks = new ArrayList<Block>();
 		List<Block> cellBlocks = new ArrayList<Block>();
 		List<Table> tablesList = new ArrayList<Table>();
+		Map<String, Object> finalData = new LinkedHashMap<>();
 
 		// loops until pagination token is null
 		while (finished == false) {
@@ -297,18 +301,18 @@ public class App {
 
 			DocumentMetadata documentMetaData = response.getDocumentMetadata();
 
-			System.out.println("Pages: " + documentMetaData.getPages().toString());
+//			System.out.println("Pages: " + documentMetaData.getPages().toString());
 
 			// Show blocks, confidence and detection times
 			List<Block> blocks = response.getBlocks();
+			allBlocks.addAll(blocks);
 //			for (Block block : blocks) {
 //				DisplayBlockInfo(block);
 //			}
 			keySetBlocks.addAll(getBlocksByBlockType(blocks, "KEY_VALUE_SET", "KEY"));
 			valueSetBlocks.addAll(getBlocksByBlockType(blocks, "KEY_VALUE_SET", "VALUE"));
-
-			wordSetBlocks.addAll(getBlocksByBlockType(blocks, "WORD", ""));
 			tableBlocks.addAll(getBlocksByBlockType(blocks, "TABLE", ""));
+			wordSetBlocks.addAll(getBlocksByBlockType(blocks, "WORD", ""));
 			cellBlocks.addAll(getBlocksByBlockType(blocks, "CELL", ""));
 
 			paginationToken = response.getNextToken();
@@ -317,82 +321,212 @@ public class App {
 		}
 
 // ================ Form Key value pair output section start====================================
-//		System.out.println("Key Set==>" + keySetBlocks);
-//		System.out.println("Value Set==>" + valueSetBlocks);
-//		System.out.println("Word Set==>" + wordSetBlocks);
-//		allKeyValues = constructKeyValueSet(keySetBlocks, valueSetBlocks, wordSetBlocks);
+
+		allKeyValues = constructKeyValueSet(keySetBlocks, valueSetBlocks, wordSetBlocks);
 //		for (KeyValue pairKeyValue : allKeyValues) {
 //			System.out.println(pairKeyValue.toString());
 //		}
-//// ================ Form Key value pair output section end====================================
+// ================ Form Key value pair output section end====================================
 
 // ================ Table construction section start==========================================
-//		System.out.println("Tables==>" + tableBlocks);
-//		System.out.println("cellBlocks==>" + cellBlocks);
-//		System.out.println("Words===>" + wordSetBlocks);
 
 		for (Block tableBlock : tableBlocks) {
-//			System.out.println(getTableColumnRowCount(tableBlock, cellBlocks));
-//			System.out.println(getTableHeaders(tableBlock, cellBlocks, wordSetBlocks));
-//			System.out.println(getRowsData(tableBlock, cellBlocks, wordSetBlocks));
 			Table table = new Table();
 			table.setTableBlock(tableBlock);
-			table.setCellBlocks(getCellBlockByTable(table.getTableBlock(), cellBlocks));
+			table.setCellBlocks(getCellBlockByTable(table, cellBlocks));
+			table.setCellWords(getTableCellWords(table, wordSetBlocks));
+			table.setCoulumnRowscount(getTableColumnRowCount(table));
+			table.setColumnNamesList(getTableHeaders(table));
+			table.setTableData(getTableData(table));
 			tablesList.add(table);
+//			System.out.println(table.getTableData());
 		}
 
 // ================ Table construction section end============================================
 
+
+		// Using the formatted data and apply mapping
+		JSONParser jsonParser = new JSONParser();
+		FileReader reader = new FileReader("./jsonfile/mapping.json");
+		Object obj = jsonParser.parse(reader);
+		JSONObject jsonObj = (JSONObject) obj;
+		JSONArray mappingArray = (JSONArray) jsonObj.get("mapping");
+		JSONObject algorithm = getAlgorithm(mappingArray, allBlocks);
+		if(!algorithm.isEmpty()) {
+			finalData =	getFinalStatementData(algorithm, allKeyValues, tablesList);
+			String jsonStr = JSONValue.toJSONString(finalData);
+			System.out.println("Final Data=>"+jsonStr);
+		} else {
+			System.out.println("Algorithm / Mapping not found.");
+		}
 	}
 
+	private static Map<String, Object> getFinalStatementData(JSONObject algorithm,  List<KeyValue> formData, List<Table> tablesList){
+		Map<String, Object> finalData = new LinkedHashMap<>();
+		Map<String, Object> formMapping = (Map<String, Object>) algorithm.get("form_mapping");
+		Map<String, Object> tablesMapping = (Map<String, Object>) algorithm.get("tables");
+		Map<String, List<Map<String, Object>>> tableType = new LinkedHashMap<>();
+
+		// Adding data extracted using form feature
+		Map<String, Object> formAttributes = new LinkedHashMap<>();
+		formMapping.forEach((key, value) -> {
+			for(KeyValue kVPair: formData) {
+				if(value.equals(kVPair.getKey())) {
+					formAttributes.put(key, kVPair.getValue());
+				}
+			}
+		});
+
+		// Adding data extracted using table feature
+		tablesMapping.forEach((tableNameKey, tableHeadersObjValue) -> {
+			Map<String, Object> mappedHeaders = (Map<String, Object>) tableHeadersObjValue;
+			Map<String, String> tableHeadersMap = (Map<String, String>) tableHeadersObjValue;
+
+			for(Table tableObj: tablesList) {
+				List<Map<String, Object>> rowsData = new ArrayList<>();
+				if(checkForHeadersMatch(tableHeadersMap, tableObj.getColumnNamesList())){
+					for(Map<String, Object> singleRow: tableObj.getTableData()) {
+						Map<String, Object> cellMap = new LinkedHashMap<>();
+						mappedHeaders.forEach((attribute, mappedColName)->{
+							cellMap.put(attribute, singleRow.get(mappedColName));
+						});
+						rowsData.add(cellMap);
+					}
+					Collections.reverse(rowsData);
+					if (tableType.containsKey(tableNameKey)) {
+						rowsData.addAll(tableType.get(tableNameKey));
+						tableType.put(tableNameKey, rowsData);
+					} else {
+						tableType.put(tableNameKey, rowsData);
+					}
+				}
+			}
+		});
+		finalData.put("form_data", formAttributes);
+		finalData.put("tables", tableType);
+		return finalData;
+	}
+
+	private static boolean checkForHeadersMatch(Map<String, String> tableHeadersMap, List<Map<Integer, String>> columnNameList) {
+//		System.out.println("tableHeadersMap=>"+tableHeadersMap);
+//		System.out.println("columnNameList=>"+columnNameList);
+		boolean result = true;
+		ArrayList columns = new ArrayList();
+		for(int i=0; i < columnNameList.size(); i++) {
+			columns.add(columnNameList.get(i).get(i));
+		}
+		for (Map.Entry<String, String> entry: tableHeadersMap.entrySet()) {
+			if (!columns.contains(entry.getValue())) {
+				result = false;
+			}
+		}
+		return result;
+	}
+
+	private static JSONObject getAlgorithm(JSONArray mappingArray, List<Block> blockList) {
+		JSONObject algorithm = new JSONObject();
+		for(int i=0; i < mappingArray.size(); i++) {
+			JSONObject mappingObj = (JSONObject) mappingArray.get(i);
+			JSONArray detectionKeys = (JSONArray) mappingObj.get("detection_keys");
+			for (int j = 0; j < detectionKeys.size(); j++) {
+				JSONObject detectionKey = (JSONObject) detectionKeys.get(j);
+				for(Block block: blockList){
+				if(detectionKey.get("block_type").equals(block.getBlockType()) && detectionKey.get("Text").equals(block.getText())){
+					algorithm = (JSONObject) mappingObj.get("algorithm");
+					break;
+				}
+			}
+			}
+		}
+		return algorithm;
+	}
+
+
+
 // =====================Methods of Table Construction sections start==============================
+
+	private static List<Map<String, Object>> getTableData(Table table) {
+		List<Map<String, Object>> rows = new ArrayList<Map<String, Object>>();
+		for (Relationship relationship : table.getTableBlock().getRelationships()) {
+			if (relationship.getType().equals("CHILD")) {
+				Map<String, Integer> colRowCount = table.getCoulumnRowscount();
+				List<Map<Integer, String>> headers = table.getColumnNamesList();
+				List<String> cellIds = relationship.getIds().subList(colRowCount.get("columns"),
+						relationship.getIds().size());
+				int columnNo = 0;
+				Map<String, Object> rowMap = new LinkedHashMap<>();
+				for (String id : cellIds) {
+					try {
+						Block cellBlock = table.getCellBlocks().stream().filter(cell -> id.equals(cell.getId()))
+								.findFirst().orElse(null);
+						Relationship cellRel = cellBlock.getRelationships().stream()
+								.filter(rel -> rel.getType().equals("CHILD")).findFirst().orElse(null);
+						String cellString = getWordString(table.getCellWords(), cellRel.getIds());
+						rowMap.put(headers.get(columnNo).get(columnNo), cellString);
+					} catch (NullPointerException e) {
+						rowMap.put(headers.get(columnNo).get(columnNo), "NA");
+					}
+
+					if (columnNo == colRowCount.get("columns") - 1) {
+						rows.add(rowMap);
+						columnNo = 0;
+						rowMap = new LinkedHashMap<>();
+					} else {
+						columnNo++;
+					}
+				}
+			}
+		}
+
+		return rows;
+	}
 
 	private static List<Block> getTableCellWords(Table table, List<Block> words) {
 		List<Block> wordBlockList = new ArrayList<Block>();
 		for (Block cellBlock : table.getCellBlocks()) {
-			try {
+			try{
 				for (Relationship relationship : cellBlock.getRelationships()) {
 					if (relationship.getType().equals("CHILD")) {
 						for (String id : relationship.getIds()) {
-
+							wordBlockList.add(
+									words.stream().filter(block -> (block.getId().equals(id))).findFirst().orElse(null));
 						}
 					}
 				}
-			} catch (NullPointerException e) {
-				System.out.println("Exception while getting table cell words.");
+			} catch(NullPointerException e){
+
 			}
 		}
 		return wordBlockList;
 	}
 
-	private static List<Block> getCellBlockByTable(Block tableBlock, List<Block> cellBlocks) {
+	private static List<Block> getCellBlockByTable(Table table, List<Block> cellBlocks) {
 		List<Block> cellBlockList = new ArrayList<Block>();
-		for (Relationship relationship : tableBlock.getRelationships()) {
+		for (Relationship relationship : table.getTableBlock().getRelationships()) {
 			if (relationship.getType().equals("CHILD")) {
 				for (String id : relationship.getIds()) {
-					Predicate<Block> cellBlockPredicate = block -> (block.getId().equals(id));
-					cellBlockList = cellBlocks.stream().filter(cellBlockPredicate).collect(Collectors.toList());
+					cellBlockList.add(
+							cellBlocks.stream().filter(block -> (block.getId().equals(id))).findFirst().orElse(null));
 				}
 			}
 		}
 		return cellBlockList;
 	}
 
-	private static List<Map<Integer, String>> getTableHeaders(Block tableBlock, List<Block> cellBlocks,
-			List<Block> words) {
+	private static List<Map<Integer, String>> getTableHeaders(Table table) {
 		List<Map<Integer, String>> headersList = new ArrayList<Map<Integer, String>>();
-		for (Relationship relationship : tableBlock.getRelationships()) {
+		for (Relationship relationship : table.getTableBlock().getRelationships()) {
 			if (relationship.getType().equals("CHILD")) {
 				List<String> idsList = relationship.getIds();
-				Map<String, Integer> colRowcount = getTableColumnRowCount(tableBlock, cellBlocks);
+				Map<String, Integer> colRowcount = table.getCoulumnRowscount();
 				for (int i = 0; i < colRowcount.get("columns"); i++) {
-					for (Block cellBlock : cellBlocks) {
+					for (Block cellBlock : table.getCellBlocks()) {
 						if (cellBlock.getId().equals(idsList.get(i))) {
 							Map<Integer, String> hederNameMap = new HashMap<>();
 							try {
 								for (Relationship rel : cellBlock.getRelationships()) {
 									if (rel.getType().equals("CHILD")) {
-										String headerName = getWordString(words, rel.getIds());
+										String headerName = getWordString(table.getCellWords(), rel.getIds());
 										hederNameMap.put(i, headerName);
 										headersList.add(hederNameMap);
 									}
@@ -400,8 +534,6 @@ public class App {
 							} catch (NullPointerException e) {
 								hederNameMap.put(i, "No Header");
 								headersList.add(hederNameMap);
-								System.out.println("Exception while getting relationship of header cell block");
-								System.out.println(cellBlock);
 							}
 						}
 					}
@@ -409,18 +541,16 @@ public class App {
 
 			}
 		}
-
 		return headersList;
 	}
 
 	// Method to get row and columns count available in table
-	private static Map<String, Integer> getTableColumnRowCount(Block tableBlock, List<Block> cellBlocks) {
+	private static Map<String, Integer> getTableColumnRowCount(Table table) {
 		Map<String, Integer> map = new HashMap<String, Integer>();
-
-		for (Relationship relationship : tableBlock.getRelationships()) {
+		for (Relationship relationship : table.getTableBlock().getRelationships()) {
 			if (relationship.getType().equals("CHILD")) {
 				String lastIdString = relationship.getIds().get(relationship.getIds().size() - 1);
-				for (Block ceBlock : cellBlocks) {
+				for (Block ceBlock : table.getCellBlocks()) {
 					if (ceBlock.getId().equals(lastIdString)) {
 						map.put("columns", ceBlock.getColumnIndex());
 						map.put("rows", ceBlock.getRowIndex());
@@ -430,43 +560,6 @@ public class App {
 			}
 		}
 		return map;
-	}
-
-	private static List<Map<String, String>> getRowsData(Block tableBlock, List<Block> cellBlocks, List<Block> words) {
-		List<Map<String, String>> rows = new ArrayList<Map<String, String>>();
-		for (Relationship relationship : tableBlock.getRelationships()) {
-			if (relationship.getType().equals("CHILD")) {
-				Map<String, Integer> colRowCount = getTableColumnRowCount(tableBlock, cellBlocks);
-				List<Map<Integer, String>> headers = getTableHeaders(tableBlock, cellBlocks, words);
-				List<String> idStrings = relationship.getIds();
-				List<String> cellIds = idStrings.subList(colRowCount.get("columns") - 1, idStrings.size());
-				for (String id : cellIds) {
-					Map<String, String> rowMap = new HashMap<>();
-					for (int col = 0; col < colRowCount.get("columns"); col++) {
-						for (Block cellBlock : cellBlocks) {
-							if (cellBlock.getId().equals(id)) {
-								try {
-									for (Relationship rel : cellBlock.getRelationships()) {
-										if (rel.getType().equals("CHILD")) {
-											String cellData = getWordString(words, rel.getIds());
-											rowMap.put(headers.get(col).get(col), cellData);
-										}
-									}
-								} catch (NullPointerException e) {
-									rowMap.put(headers.get(col).get(col), "No Data");
-//									System.out.println("Exception while getting relationship of data cell block");
-//									System.out.println(cellBlock);
-								}
-							}
-						}
-					}
-					rows.add(rowMap);
-				}
-
-			}
-		}
-
-		return rows;
 	}
 
 // =====================Methods of Table Construction sections end==============================
@@ -525,9 +618,10 @@ public class App {
 
 	// Displays Block information for text detection and text analysis
 	private static void DisplayBlockInfo(Block block) {
-		if (!block.getBlockType().equals("LINE")) {
-			System.out.println(block);
-		}
+		System.out.println(block);
+//		if (!block.getBlockType().equals("LINE")) {
+//			System.out.println(block);
+//		}
 //		System.out.println("Block Id : " + block.getId());
 //		if (block.getText() != null)
 //			System.out.println("\tDetected text: " + block.getText());
